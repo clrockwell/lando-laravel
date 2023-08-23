@@ -1,0 +1,46 @@
+name: quiztimecatalog
+recipe: laravel
+config:
+  webroot: .
+  via: nginx
+  php: '8.0'
+  xdebug: 'off'
+  config:
+    php: .lando.php.ini
+services:
+  appserver_nginx:
+    config:
+      vhosts: deployment-scripts/.nginx.default.conf
+  mssql:
+    type: mssql
+    portforward: 1433
+  appserver:
+    php: .lando.php.ini
+    build_as_root:
+      - apt-get update -y
+      - apt-get install cron -y
+      - apt-get install vim
+    run_as_root:
+      - service cron start
+    overrides:
+      environment:
+        XDEBUG_MODE: null
+        PHP_IDE_CONFIG: serverName=QuizTimeCatalog
+  chromedriver:
+    type: compose
+    services:
+      image: 'robcherry/docker-chromedriver:latest'
+      command: /usr/local/bin/supervisord -c /etc/supervisord.conf
+      expose:
+        - '4444'
+      environment:
+        CHROMEDRIVER_WHITELISTED_IPS: ''
+        CHROMEDRIVER_URL_BASE: /wd/hub
+      security_opt:
+        - 'seccomp:unconfined'
+tooling:
+  xdebug:
+    description: Loads Xdebug in the selected mode.
+    cmd:
+      - appserver: /app/.lando/xdebug.sh
+    user: root
